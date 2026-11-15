@@ -1,0 +1,2 @@
+# Keep this directory in git while ignoring heavy test video files.
+# Use download_videos.py in the project root to fetch test videos.

@@ -1,0 +1,47 @@
+@import "tailwindcss";
+
+@theme {
+  --color-bg: #0B1020;
+  --color-surface: #111827;
+  --color-surface2: #1A2236;
+  --color-border: rgba(255, 255, 255, 0.08);
+  --color-accent: #8B5CF6;
+  --color-ok: #22C55E;
+  --color-warn: #F59E0B;
+  --color-danger: #EF4444;
+  --font-sans: 'Inter', sans-serif;
+}
+
+html, body, #root {
+  height: 100%;
+  width: 100%;
+  margin: 0;
+  padding: 0;
+  overflow: hidden; /* Keeps the whole browser window from scrolling */
+  background-color: var(--color-bg);
+  font-family: var(--font-sans);
+  color: white;
+}
+
+/* 🏎️ Custom Red Admin Scrollbar */
+.admin-scrollbar::-webkit-scrollbar {
+  width: 5px;
+}
+
+.admin-scrollbar::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.2);
+}
+
+.admin-scrollbar::-webkit-scrollbar-thumb {
+  background: #dc2626; /* Crimson Red */
+  border-radius: 10px;
+}
+
+.admin-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: #ef4444;
+}
+
+/* 🗺️ Dark Map Tiles Filter */
+.dark-map-tiles {
+  filter: invert(100%) hue-rotate(180deg) brightness(95%) contrast(90%);
+}

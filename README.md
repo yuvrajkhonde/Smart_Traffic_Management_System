@@ -7,28 +7,48 @@ V.I.T.A.L.S. is an end-to-end, fully autonomous ecosystem designed to modernize 
 ---
 
 ## ✨ Key Features
-- **Algorithmic Demand Routing**: Uses Reinforcement Learning to dynamically allocate green lights based on real-time traffic density across a 4-way intersection.
-- **Emergency Override**: Detects ambulances and forces immediate green lights for emergency lanes.
-- **Dual-Model Computer Vision**: Simultaneous YOLOv8 object tracking and a custom YOLO enforcement model for violation detection.
-- **Autonomous E-Challan System**: Detects Red Light Jumps, Triple Riding, and No Helmet violations. Uses EasyOCR for Automatic License Plate Recognition (ALPR) and logs fines directly to the cloud database.
-- **Officer Dashboard**: A React-based command center for traffic officers to monitor live surveillance, manage E-Challans, and view system analytics.
+- **Algorithmic Demand Routing**: Uses Reinforcement Learning (PPO) to dynamically allocate green lights based on real-time traffic density across intersection lanes.
+- **Emergency Vehicle Override**: Detects ambulances in real-time and grants immediate priority green signal clearance.
+- **Dual-Model Computer Vision**: Simultaneous YOLOv8 multi-class object tracking and a custom YOLO enforcement model for Indian traffic violations (Helmet detection, Triple riding, and ALPR).
+- **Autonomous E-Challan Generation**: Identifies Red Light Jumps, Triple Riding, and Helmetless riders. Performs Automatic License Plate Recognition (ALPR) via EasyOCR and registers challans in the cloud DBMS.
+- **Officer & Citizen Command Center**: Modern React + Vite portal for traffic officers to monitor live surveillance feeds, manage e-challans, audit system health, and citizen payment self-service.
 
 ---
 
 ## 🏗️ System Architecture & Tech Stack
 
+```text
+├── backend/                  # FastAPI async REST API & AI Inference Engine
+│   ├── admin/                # BTU Admin Command Center routers
+│   ├── ai_engine/            # YOLO tracking, enforcement & OCR pipelines
+│   ├── core/                 # Auth, JWT, dependencies & database client
+│   ├── routers/              # Cameras, challans, traffic, parking, violations
+│   └── main.py               # Application entrypoint
+├── frontend/                 # React + Vite + Tailwind CSS command dashboard
+│   ├── src/                  # Pages (Surveillance, Challans, Map, Analytics)
+│   └── vite.config.ts        # Vite configuration
+├── database/                 # Supabase PostgreSQL SQL schemas, RLS & triggers
+├── ai_models/                # AI model weights directory & download guides
+├── ml_training/              # Phase 2 YOLO fine-tuning & evaluation scripts
+├── model_train/              # YOLO & PPO training pipelines & roadmap
+├── scripts/                  # Diagnostic, camera test, DB verification tools
+└── supabase/                 # Edge functions & Supabase CLI configuration
+```
+
 ### Backend
-- **FastAPI (Python)**: High-performance async API server serving as the backbone.
-- **Supabase (PostgreSQL)**: Cloud database for real-time state synchronization, user authentication, and data logging.
-- **Stable Baselines 3 (PPO)**: Reinforcement Learning model powering the adaptive traffic light decisions.
+- **FastAPI (Python 3.9+)**: High-performance async API server serving as the backbone.
+- **Supabase (PostgreSQL)**: Cloud database for real-time state synchronization, authentication, and violation records.
+- **Stable-Baselines3 (PPO)**: Reinforcement Learning model powering adaptive traffic light phase decisions.
 
-### AI & Computer Vision (`app/utils.py`)
-- **YOLOv8**: Real-time multi-class object tracking (Cars, Buses, Trucks, Motorcycles, Persons).
-- **Custom Enforcement Model**: Specialized YOLO model trained to detect License Plates, Helmets, and Motorcycles.
-- **EasyOCR**: Optical Character Recognition engine for reading ALPR crops.
+### AI & Computer Vision (`backend/ai_engine/`)
+- **YOLOv8**: Real-time multi-class vehicle detection & ByteTrack tracking (Cars, Buses, Trucks, Motorcycles, Persons).
+- **Custom Indian Enforcement Model**: Specialized YOLO model trained to detect License Plates, Helmets, and Motorcycles.
+- **EasyOCR Engine**: Optical Character Recognition engine optimized for Indian vehicle number plates.
 
-### Frontends
-- **Admin Dashboard (`frontend-v2`)**: React + Vite secure portal for Traffic Officers.
+### Web Dashboard (`frontend/`)
+- **React 19 + Vite + TypeScript**: High-performance single page application.
+- **Tailwind CSS + Lucide Icons**: Modern dashboard styling.
+- **Leaflet & React-Leaflet**: Live GIS intersection and traffic congestion mapping.
 
 ---
 
@@ -36,127 +56,133 @@ V.I.T.A.L.S. is an end-to-end, fully autonomous ecosystem designed to modernize 
 
 Follow these step-by-step instructions to clone, configure, and boot the entire system on your local machine.
 
-### 1. Prerequisites (What you need installed)
-Before doing anything, ensure your computer has the following software installed:
-- **[Python 3.9+](https://www.python.org/downloads/)**: Required to run the FastAPI backend and AI Models. *(Make sure to check "Add Python to PATH" during installation).*
-- **[Node.js v18+](https://nodejs.org/)**: Required to run the React Web Dashboard. This will also install `npm`.
-- **[Git](https://git-scm.com/downloads)**: Required to download this repository to your computer.
-- **[Supabase Account](https://supabase.com/)**: A free account is required to host the Postgres database.
-- **NVIDIA GPU with CUDA Support** *(Optional but Highly Recommended)*. The AI models run optimally on a dedicated GPU. If you don't have one, the system will automatically fall back to CPU mode, which runs successfully but at a much slower video framerate.
+### 1. Prerequisites
+Ensure your computer has the following software installed:
+- **[Python 3.9+](https://www.python.org/downloads/)**: Required for the FastAPI backend and AI pipelines.
+- **[Node.js v18+](https://nodejs.org/)**: Required for the React Web Dashboard (includes `npm`).
+- **[Git](https://git-scm.com/downloads)**: Required for version control.
+- **[Supabase Account](https://supabase.com/)**: Required for the cloud Postgres database.
+- **NVIDIA GPU with CUDA** *(Optional but Highly Recommended)*: Accelerates YOLOv8 and OCR inference. If unavailable, the system automatically falls back to CPU execution.
 
-### 2. Download the Project
-Open your terminal (or Command Prompt) and download the code to your local machine:
+### 2. Clone the Repository
 ```bash
 git clone https://github.com/baadshah697/Smart_Traffic_Management_System.git
 cd Smart_Traffic_Management_System
 ```
 
-### 3. Connect to Supabase
-The AI backend and the React frontend both need to talk to a centralized database to log traffic violations and read intersection states. 
-1. Create a new project in your [Supabase Dashboard](https://supabase.com/dashboard/projects).
-2. Go to **Project Settings -> API** to find your `Project URL` and `service_role` secret key.
-3. In your project folder, create a copy of the hidden environment file:
-   ```bash
-   cp .env.example .env
-   ```
-4. Open the `.env` file in a text editor and paste your Supabase URL and Key inside.
+### 3. Configure Environment Variables
+Copy the template `.env.example` to `.env` in the root folder:
+```bash
+cp .env.example .env
+```
+Fill in your Supabase credentials in `.env`:
+```ini
+SUPABASE_URL="https://your-project.supabase.co"
+SUPABASE_SERVICE_ROLE_KEY="your-supabase-service-role-key"
+JWT_SECRET_KEY="your-custom-jwt-secret"
+JWT_ALGORITHM="HS256"
+```
 
-### 4. Initialize the Database Tables
-Your new Supabase project is completely empty. We need to create the tables (like `violations`, `e_challans`, etc.) so the AI has a place to save data.
-1. In your Supabase Dashboard, click on **SQL Editor** on the left menu.
-2. On your computer, open the `database/` folder in this repository.
-3. Copy the text from inside these files and run them in the Supabase SQL Editor **in this exact order**:
-   - `00_master_schema.sql` *(Creates all tables and Enums)*
-   - `schema.sql` *(Creates functions for the AI triggers)*
-   - `rls_policies.sql` *(Secures the database)*
-   - `intersection_status.sql` *(Sets up the Reinforcement Learning tables)*
-   - `triggers.sql` *(Automates payments and E-Challan logic)*
+For the frontend, copy `frontend/.env.example` to `frontend/.env`:
+```bash
+cp frontend/.env.example frontend/.env
+```
 
-### 5. Download the AI Model Weights (Critical)
-Because AI model files are massive, they are not stored on GitHub. You **must** download them manually. If you skip this, the backend will crash immediately because it has no "brain" to use.
+### 4. Initialize Database Tables
+1. Open your [Supabase Dashboard](https://supabase.com/dashboard/projects) and select **SQL Editor**.
+2. Run the SQL scripts located in the `database/` directory in this exact order:
+   - `00_master_schema.sql` *(Creates all tables, vehicles registry, and ENUM types)*
+   - `schema.sql` *(Helper functions and enforcement triggers)*
+   - `rls_policies.sql` *(Row Level Security rules)*
+   - `intersection_status.sql` *(Reinforcement Learning tables)*
+   - `triggers.sql` *(Automated payments and status triggers)*
 
-👉 **[Download all 4 required AI Models from Google Drive here](https://drive.google.com/drive/folders/1WHVeHnA-8CUa1F0rWcdnSnSyWjpA_pYj?usp=sharing)**
+### 5. Download AI Model Weights (Critical)
+Because binary model files exceed GitHub file limits, model weights are hosted on Google Drive:
 
-Once downloaded, place the files exactly as follows:
-- Put **`best.pt`** and **`yolov8n.pt`** inside the `app/models/` folder.
-- Put **`vitals_ppo_model.zip`** and **`vitals_ppo_vecnorm.pkl`** in the main root folder of the project.
+👉 **[Download AI Models from Google Drive](https://drive.google.com/drive/folders/1WHVeHnA-8CUa1F0rWcdnSnSyWjpA_pYj?usp=sharing)**
+
+Place the downloaded files into the `ai_models/` folder:
+- `yolov8n.pt` - Base YOLOv8 Nano vehicle detection model
+- `best.pt` - Custom trained YOLO model for Indian traffic violations
+- `vitals_ppo_model.zip` - Stable-Baselines3 PPO traffic light agent
+- `vitals_ppo_vecnorm.pkl` - PPO normalization parameters
 
 ---
 
 ## 💻 Running the System
 
-Now that the database and AI models are ready, it's time to boot the system! You will need **two separate terminals** open: one for the Backend, and one for the Frontend.
+You will need **two separate terminals** open: one for the Backend, and one for the Frontend.
 
 ### Step 1: Start the Backend (FastAPI + AI Engine)
-The backend is the engine of the project. It runs the YOLOv8 object detection, calculates traffic congestion, makes Reinforcement Learning decisions, and sends data to Supabase.
 
-**1. Create an Isolated Python Environment**
-It is highly recommended to create a "Virtual Environment". This acts as a sandbox, ensuring the AI packages we are about to install don't interfere with other Python projects on your PC.
+**1. Create and Activate a Virtual Environment**
 ```bash
-# If you are on Windows:
+# Windows:
 python -m venv venv
 venv\Scripts\activate
 
-# If you are on Mac/Linux:
+# Mac / Linux:
 python3 -m venv venv
 source venv/bin/activate
 ```
-*(You should now see `(venv)` at the start of your terminal line).*
 
-**2. Install the Required Python Packages**
-We need to install libraries like OpenCV, EasyOCR, FastAPI, and PyTorch. 
-
-* **Option A: 🟢 I have an NVIDIA GPU (Recommended)**
-  First, go to the [PyTorch Get Started Guide](https://pytorch.org/get-started/locally/) and install the specific CUDA version of `torch` and `torchvision` for your computer. Then, run the command below.
-* **Option B: 🔵 I am on a Mac or CPU-Only PC**
-  Simply run the command below. PyTorch will automatically install the CPU-only version.
-
+**2. Install Python Dependencies**
+* **NVIDIA GPU (CUDA)**: Install PyTorch with CUDA support first from [PyTorch.org](https://pytorch.org/get-started/locally/), then:
+```bash
+pip install -r requirements.txt
+```
+* **CPU-Only**:
 ```bash
 pip install -r requirements.txt
 ```
 
-**3. Boot the Server**
-Once everything is installed, start the FastAPI server using `uvicorn`:
+**3. Boot the FastAPI Server**
 ```bash
-python -m uvicorn app.main:app --reload
+python -m uvicorn backend.main:app --reload
 ```
-*What happens now?* You will see logs in your terminal indicating that the AI models are loading into memory (it will tell you if it's using CUDA or CPU). The backend will then automatically start processing the camera feeds and updating your Supabase database in real-time.
+The API server will launch at `http://127.0.0.1:8000`. You can inspect the interactive Swagger docs at `http://127.0.0.1:8000/docs`.
 
-### Step 2: Start the Officer Web Dashboard (React)
-While the backend is running in your first terminal, open a **new** terminal window to start the user interface.
+### Step 2: Start the Web Dashboard (React + Vite)
 
-The frontend is built with React and Vite. It provides a beautiful dashboard for traffic officers to view live AI camera feeds, manage E-Challans, and see intersection stats.
+In a new terminal window:
 
-**1. Navigate to the Frontend Folder**
+**1. Navigate to the Frontend Directory**
 ```bash
-cd frontend-v2
+cd frontend
 ```
 
-**2. Install Node Packages**
-This downloads all the React dependencies (like TailwindCSS, Recharts, and Mapbox) into a `node_modules` folder.
+**2. Install Dependencies**
 ```bash
 npm install
 ```
 
-**3. Boot the React App**
+**3. Boot Vite Dev Server**
 ```bash
 npm run dev
 ```
-*What happens now?* Vite will start a local web server. Open your internet browser and go to the link provided in the terminal (usually **`http://localhost:5173`**). 
-
-Congratulations! The entire V.I.T.A.L.S. ecosystem is now running on your machine.
-
+Open your browser and navigate to **`http://localhost:5173`**.
 
 ---
 
-## 🗄️ Database Schema Overview
+## 🛠️ Testing & Verification Tools
 
-The core relational structure in Supabase includes:
-- **`congested_roads`**: The live source of truth for the React map. Stores current `vehicle_count`, `congestion_level`, and the active signal phase for every camera node.
-- **`violations`**: Logs every AI-detected infraction. Stores `violation_type`, `confidence_score`, `plate_number`, and a URL to the `evidence_image`.
-- **`e_challans`**: Links `violations` to financial tickets. Stores the calculated `amount`, `due_date`, and payment `status`.
-- **`vehicles`**: The citizen registry mapping `plate_number` to `owner_name`.
-- **`accidents`**: A spatial table for crash detection logging locations and timestamps.
+The `scripts/` directory contains standalone utilities for testing components in isolation:
+- `scripts/verify_db.py`: Verifies Supabase database connection and table integrity.
+- `scripts/test_camera.py`: Validates OpenCV video capture and camera endpoints.
+- `scripts/test_detection.py`: Runs a quick YOLO detection on a sample frame.
+- `scripts/test_ppo.py`: Evaluates the Reinforcement Learning PPO agent.
+- `scripts/benchmark_all_test_videos.py`: Benchmarks inference FPS, tracking, and violation accuracy.
+- `download_videos.py`: Downloads sample CCTV traffic videos for local testing into `backend/test_videos/`.
+
+---
+
+## 🗄️ Database Schema Summary
+- **`congested_roads`**: Live intersection telemetry (vehicle count, congestion percentage, active light phase).
+- **`violations`**: Detected infractions (type, confidence score, license plate, evidence snapshot URL).
+- **`e_challans`**: Generated traffic fines linked to violations (amount, status, payment timestamp).
+- **`vehicles`**: Citizen registry mapping license plates to vehicle owners and contact info.
+- **`accidents`**: Accident incident logs with GIS coordinates and severity tags.
 
 ---
 *Developed for the Bhopal Smart City AI Traffic Management Initiative.*

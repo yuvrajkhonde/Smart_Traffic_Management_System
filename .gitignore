@@ -1,68 +1,126 @@
-# Environments
+# ==============================================================================
+# Environments & Secrets
+# ==============================================================================
 .env
-.venv
+.env.local
+.env.*.local
+*.env
+!.env.example
+.venv/
 env/
 venv/
 ENV/
 env.bak/
 venv.bak/
 
-# Project files
+# ==============================================================================
+# Python & Bytecode
+# ==============================================================================
 __pycache__/
 *.py[cod]
 *$py.class
-app/static/evidence/
-tensorboard_logs/
+*.pyd
+*.pyo
+.pytest_cache/
+.coverage
+htmlcov/
 
-# React & Frontend
+# ==============================================================================
+# Frontend & Node (React / Vite)
+# ==============================================================================
 node_modules/
 dist/
 build/
 .next/
 out/
-frontend-v2/android/
-frontend-v2/ios/
+.npm
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+.eslintcache
+
+# ==============================================================================
+# Mobile App & Native Builds (Excluded to focus repository on Web & Backend)
+# ==============================================================================
+AI_traffic_app/
 .expo/
-
-# AI Models & Checkpoints
-*.pt
-*yolo*.pt
-*best.pt
-*.zip
-*.pkl
-
-# Mobile Apps & Binaries
+android/
+ios/
 *.apk
 *.aab
 
-# DB & Test Files
+# ==============================================================================
+# AI Models & Checkpoints (Download via Google Drive link in ai_models/README.md)
+# ==============================================================================
+*.pt
+*yolo*.pt
+*best*.pt
+*.zip
+*.pkl
+*.onnx
+*.engine
+*.bin
+*.h5
+*.tflite
+*.safetensors
+ai_models/*.pt
+ai_models/*.zip
+ai_models/*.pkl
+!ai_models/README.md
+!ai_models/.gitkeep
+
+# ==============================================================================
+# Datasets, Training Runs & Benchmarks
+# ==============================================================================
+DATASET/
+dataset/
+datasets/
+runs/
+**/runs/
+captured_test_frames/
+ml_training/runs/
+ml_training/test_outputs/
+tensorboard_logs/
+model train/
+
+# ==============================================================================
+# Video Feeds & Runtime Uploads (Exceeds GitHub file size limit)
+# ==============================================================================
+*.mp4
+*.avi
+*.mov
+*.mkv
+backend/uploads/*
+!backend/uploads/.gitkeep
+backend/test_videos/*
+!backend/test_videos/.gitkeep
+backend/static/evidence/*
+!backend/static/evidence/.gitkeep
+app/static/evidence/
+uploads/
+static/evidence/
+test_images/
+
+# ==============================================================================
+# Scratch, Logs, Temporary & Database Files
+# ==============================================================================
+scratch/
+*.log
+*.tmp
+*.bak
+*.swp
+*.swo
+*~
 PyWhatKit_DB.txt
 test_*.jpg
 test_*.png
 *.sqlite3
+supabase/.temp/
 
-# Deprecated / Unused Folders
+# ==============================================================================
+# Deprecated / Legacy paths
+# ==============================================================================
 Microsoft/
 backup_original/
-frontend/
 frontend1/
-uploads/
-static/
-test_images/
-
-# Local Utilities & Scratchpads
-backend_test.py
-check_model.py
-download_diagrams.py
-keep_tunnel_alive.js
-package.json
-package-lock.json
-sms_diagnostic.py
-test_camera.py
-test_detection.py
-test_ppo.py
-train_local.py
-verify_db.py
-
-# Mobile App
-AI_traffic_app/

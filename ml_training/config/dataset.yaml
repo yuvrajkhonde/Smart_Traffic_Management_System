@@ -1,0 +1,14 @@
+# Dataset configuration for V.I.T.A.L.S. Phase 2 Enforcement Model Training
+# Dataset: Helmet Detection.v6-balanced-dataset.yolov8
+# Classes: With Helmet (0), Without Helmet (1), licence (2)
+
+path: C:/Users/OMEN/Desktop/Bhopal-Traffic-System/Module_2_Backend/DATASET/Helmet Detection.v6-balanced-dataset.yolov8
+train: train/images
+val: valid/images
+test: test/images
+
+nc: 3
+names:
+  0: 'With Helmet'
+  1: 'Without Helmet'
+  2: 'licence'

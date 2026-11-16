@@ -250,17 +250,20 @@ CREATE INDEX IF NOT EXISTS idx_e_challans_status ON public.e_challans(status);
 CREATE TABLE IF NOT EXISTS public.payments (
   id UUID NOT NULL DEFAULT gen_random_uuid(),
   challan_id UUID NULL,
+  user_id UUID NULL,
   amount NUMERIC(10, 2) NOT NULL,
   payment_method TEXT NULL DEFAULT 'UPI',
-  transaction_id TEXT NOT NULL,
+  transaction_id TEXT NULL DEFAULT ('TXN-' || substr(gen_random_uuid()::text, 1, 8)),
   status TEXT NULL DEFAULT 'success',
   paid_at TIMESTAMPTZ NULL DEFAULT now(),
   CONSTRAINT payments_pkey PRIMARY KEY (id),
   CONSTRAINT payments_transaction_id_key UNIQUE (transaction_id),
-  CONSTRAINT payments_challan_id_fkey FOREIGN KEY (challan_id) REFERENCES public.e_challans(id) ON DELETE CASCADE
+  CONSTRAINT payments_challan_id_fkey FOREIGN KEY (challan_id) REFERENCES public.e_challans(id) ON DELETE CASCADE,
+  CONSTRAINT payments_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.users(id) ON DELETE SET NULL
 );
 
 CREATE INDEX IF NOT EXISTS idx_payments_challan_id ON public.payments(challan_id);
+CREATE INDEX IF NOT EXISTS idx_payments_user_id ON public.payments(user_id);
 
 -- ------------------------------------------------------------------------------
 -- 9. PARKING MANAGEMENT

@@ -266,17 +266,20 @@ create index IF not exists idx_e_challans_status on public.e_challans using btre
 create table if not exists public.payments (
   id uuid not null default gen_random_uuid (),
   challan_id uuid null,
+  user_id uuid null,
   amount numeric(10, 2) not null,
   payment_method text null default 'UPI'::text,
-  transaction_id text not null,
+  transaction_id text null default ('TXN-' || substr(gen_random_uuid()::text, 1, 8)),
   status text null default 'success'::text,
   paid_at timestamp with time zone null default now(),
   constraint payments_pkey primary key (id),
   constraint payments_transaction_id_key unique (transaction_id),
-  constraint payments_challan_id_fkey foreign KEY (challan_id) references e_challans (id) on delete CASCADE
+  constraint payments_challan_id_fkey foreign KEY (challan_id) references e_challans (id) on delete CASCADE,
+  constraint payments_user_id_fkey foreign KEY (user_id) references users (id) on delete set null
 ) TABLESPACE pg_default;
 
 create index IF not exists idx_payments_challan_id on public.payments using btree (challan_id) TABLESPACE pg_default;
+create index IF not exists idx_payments_user_id on public.payments using btree (user_id) TABLESPACE pg_default;
 
 create table if not exists public.vehicles (
   id uuid not null default gen_random_uuid (),

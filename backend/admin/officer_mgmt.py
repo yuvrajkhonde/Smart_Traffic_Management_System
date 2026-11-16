@@ -38,7 +38,8 @@ def recruit_officer(data: OfficerCreate, current_user=Depends(get_current_user))
         # 4. Assign Official Role
         supabase.table("user_roles").insert({
             "user_id": user_id,
-            "role": "officer"
+            "role": "officer",
+            "badge_number": clean_badge
         }).execute()
 
         return {

@@ -1,4 +1,4 @@
-﻿from pydantic import BaseModel
+from pydantic import BaseModel
 from fastapi import APIRouter, Depends, HTTPException
 from backend.core.database import supabase
 from backend.core.auth import pwd_context, get_current_user

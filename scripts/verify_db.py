@@ -1,6 +1,11 @@
+import os
+import sys
 from dotenv import load_dotenv
+
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 load_dotenv()
-from app.database import create_supabase_client
+
+from backend.core.database import create_supabase_client
 
 db = create_supabase_client()
 

@@ -4,12 +4,21 @@
 -- ==============================================================================
 
 -- 1. Create necessary ENUM types (Required for the tables below)
-CREATE TYPE public.user_role AS ENUM ('citizen', 'admin', 'officer');
-CREATE TYPE public.violation_status AS ENUM ('pending', 'verified', 'rejected', 'paid');
+DO $$ BEGIN
+    CREATE TYPE public.user_role AS ENUM ('citizen', 'admin', 'officer');
+EXCEPTION
+    WHEN duplicate_object THEN null;
+END $$;
+
+DO $$ BEGIN
+    CREATE TYPE public.violation_status AS ENUM ('pending', 'verified', 'rejected', 'paid');
+EXCEPTION
+    WHEN duplicate_object THEN null;
+END $$;
 
 -- 2. Base Tables
-create table public.users (
-  id uuid not null default extensions.uuid_generate_v4 (),
+create table if not exists public.users (
+  id uuid not null default gen_random_uuid(),
   email text not null,
   password text not null,
   created_at timestamp with time zone null default now(),
@@ -18,9 +27,9 @@ create table public.users (
   constraint users_email_key unique (email)
 ) TABLESPACE pg_default;
 
-create table public.user_roles (
+create table if not exists public.user_roles (
   id uuid not null default gen_random_uuid (),
-  user_id uuid null,
+  user_id uuid not null,
   role public.user_role null default 'citizen'::user_role,
   assigned_at timestamp with time zone null default now(),
   badge_number text null,
@@ -30,8 +39,26 @@ create table public.user_roles (
   constraint user_roles_user_id_fkey foreign KEY (user_id) references users (id) on delete CASCADE
 ) TABLESPACE pg_default;
 
-create table public.accidents (
+create table if not exists public.surveillance_cameras (
+  id text not null default gen_random_uuid ()::text,
+  location_name text not null,
+  ip_address text null,
+  direction text null,
+  is_active boolean null default true,
+  created_at timestamp with time zone null default now(),
+  latitude double precision null,
+  longitude double precision null,
+  managed_by uuid null,
+  officer_id uuid null,
+  api_key text null default gen_random_uuid ()::text,
+  constraint surveillance_cameras_pkey primary key (id),
+  constraint surveillance_cameras_managed_by_fkey foreign KEY (managed_by) references users (id) on delete set null,
+  constraint surveillance_cameras_officer_id_fkey foreign KEY (officer_id) references user_roles (id) on delete set null
+) TABLESPACE pg_default;
+
+create table if not exists public.accidents (
   id uuid not null default gen_random_uuid (),
+  camera_id text null,
   description text null,
   reported_by uuid null,
   injuries integer null default 0,
@@ -44,7 +71,7 @@ create table public.accidents (
   constraint accidents_reported_by_fkey foreign KEY (reported_by) references users (id) on delete set null
 ) TABLESPACE pg_default;
 
-create table public.audit_logs (
+create table if not exists public.audit_logs (
   id uuid not null default gen_random_uuid (),
   changed_by uuid null,
   action_type text not null,
@@ -53,13 +80,13 @@ create table public.audit_logs (
   payload jsonb null,
   created_at timestamp with time zone null default now(),
   constraint audit_logs_pkey primary key (id),
-  constraint audit_logs_user_id_fkey foreign KEY (changed_by) references users (id) on delete set null
+  constraint audit_logs_changed_by_fkey foreign KEY (changed_by) references users (id) on delete set null
 ) TABLESPACE pg_default;
 
-create index IF not exists idx_audit_logs_user_id on public.audit_logs using btree (changed_by) TABLESPACE pg_default;
+create index IF not exists idx_audit_logs_changed_by on public.audit_logs using btree (changed_by) TABLESPACE pg_default;
 create index IF not exists idx_audit_logs_table_record on public.audit_logs using btree (table_name, record_id) TABLESPACE pg_default;
 
-create table public.congested_roads (
+create table if not exists public.congested_roads (
   id uuid not null default gen_random_uuid (),
   road_name text not null,
   area text null,
@@ -70,6 +97,8 @@ create table public.congested_roads (
   vehicle_count integer null default 0,
   recommended_time integer null default 30,
   is_emergency boolean null default false,
+  danger_level text null default 'Low'::text,
+  wsi_score double precision null default 0.0,
   last_updated timestamp with time zone null default now(),
   constraint congested_roads_pkey primary key (id),
   constraint signal_state_check check (
@@ -80,8 +109,9 @@ create table public.congested_roads (
 ) TABLESPACE pg_default;
 
 create index IF not exists idx_congested_roads_name on public.congested_roads using btree (road_name) TABLESPACE pg_default;
+create index IF not exists idx_congested_roads_camera on public.congested_roads using btree (camera_id) TABLESPACE pg_default;
 
-create table public.intersection_status (
+create table if not exists public.intersection_status (
   id uuid not null default gen_random_uuid (),
   intersection_name text not null default 'Main Intersection'::text,
   lane_direction text not null,
@@ -97,19 +127,19 @@ create table public.intersection_status (
 
 create unique INDEX IF not exists idx_intersection_lane on public.intersection_status using btree (intersection_name, lane_direction) TABLESPACE pg_default;
 
-create table public.parking_lots (
+create table if not exists public.parking_lots (
   id uuid not null default gen_random_uuid (),
   name text not null,
   location text null,
-  total_slots integer null,
-  occupied integer null,
+  total_slots integer null default 50,
+  occupied integer null default 0,
   updated_at timestamp with time zone null default now(),
   latitude double precision null,
   longitude double precision null,
   constraint parking_lots_pkey primary key (id)
 ) TABLESPACE pg_default;
 
-create table public.parking_requests (
+create table if not exists public.parking_requests (
   id uuid not null default gen_random_uuid (),
   parking_lot_id uuid null,
   vehicle_number text null,
@@ -119,42 +149,25 @@ create table public.parking_requests (
   created_at timestamp with time zone null default now(),
   approved_by uuid null,
   constraint parking_requests_pkey primary key (id),
-  constraint parking_requests_approved_by_fkey foreign KEY (approved_by) references users (id),
-  constraint parking_requests_parking_lot_id_fkey foreign KEY (parking_lot_id) references parking_lots (id)
+  constraint parking_requests_approved_by_fkey foreign KEY (approved_by) references users (id) on delete set null,
+  constraint parking_requests_parking_lot_id_fkey foreign KEY (parking_lot_id) references parking_lots (id) on delete cascade
 ) TABLESPACE pg_default;
 
-create table public.ptu_settings (
+create table if not exists public.ptu_settings (
   key text not null,
   value numeric not null,
   updated_at timestamp with time zone null default now(),
   constraint ptu_settings_pkey primary key (key)
 ) TABLESPACE pg_default;
 
-create table public.surveillance_cameras (
-  id text not null default gen_random_uuid (),
-  location_name text not null,
-  ip_address text null,
-  is_active boolean null default true,
-  created_at timestamp with time zone null default now(),
-  latitude double precision null,
-  longitude double precision null,
-  managed_by uuid null,
-  officer_id uuid null,
-  api_key text null default gen_random_uuid (),
-  direction text null,
-  constraint surveillance_cameras_pkey primary key (id),
-  constraint surveillance_cameras_managed_by_fkey foreign KEY (managed_by) references users (id) on delete set null,
-  constraint surveillance_cameras_officer_id_fkey foreign KEY (officer_id) references user_roles (id)
-) TABLESPACE pg_default;
-
-create table public.system_configs (
+create table if not exists public.system_configs (
   key text not null,
   value jsonb not null,
   updated_at timestamp with time zone null default now(),
   constraint system_configs_pkey primary key (key)
 ) TABLESPACE pg_default;
 
-create table public.traffic_signals (
+create table if not exists public.traffic_signals (
   id uuid not null default gen_random_uuid (),
   camera_id text null,
   current_state text null default 'red'::text,
@@ -171,27 +184,54 @@ create table public.traffic_signals (
   )
 ) TABLESPACE pg_default;
 
-create table public.violations (
+create table if not exists public.violations (
   id uuid not null default gen_random_uuid (),
   plate_number text null,
   violation_type text not null,
   evidence_image_url text not null,
   confidence_score double precision null,
-  status text null default 'pending'::violation_status,
+  status text null default 'pending',
   detected_at timestamp with time zone null default now(),
   camera_id text null,
   location text null default 'Bhopal City'::text,
   severity text null default 'medium'::text,
   source text null default 'live_camera'::text,
   constraint violations_pkey primary key (id),
-  constraint fk_violation_camera foreign KEY (camera_id) references surveillance_cameras (id)
+  constraint fk_violation_camera foreign KEY (camera_id) references surveillance_cameras (id) on delete set null
 ) TABLESPACE pg_default;
 
 create index IF not exists idx_violations_camera_id on public.violations using btree (camera_id) TABLESPACE pg_default;
 create index IF not exists idx_violations_status on public.violations using btree (status) TABLESPACE pg_default;
 create index IF not exists idx_violations_plate_number on public.violations using btree (plate_number) TABLESPACE pg_default;
 
-create table public.e_challans (
+-- Forensic table for uploaded batch test/surveillance video files
+create table if not exists public.uploaded_video_violations (
+  id uuid not null default gen_random_uuid(),
+  job_id text null,
+  video_filename text null,
+  camera_id text null,
+  location text null,
+  latitude double precision null,
+  longitude double precision null,
+  violation_type text not null,
+  plate_number text null,
+  confidence_score double precision null,
+  hit_ratio double precision null,
+  evaluable_frames integer null,
+  sha256_hash text null,
+  evidence_image_url text not null,
+  raw_frame_url text null,
+  status text null default 'pending',
+  severity text null default 'medium',
+  is_auto_verified boolean null default false,
+  detected_at timestamp with time zone null default now(),
+  constraint uploaded_video_violations_pkey primary key (id)
+) TABLESPACE pg_default;
+
+create index IF not exists idx_uploaded_violations_job_id on public.uploaded_video_violations(job_id);
+create index IF not exists idx_uploaded_violations_plate on public.uploaded_video_violations(plate_number);
+
+create table if not exists public.e_challans (
   id uuid not null default gen_random_uuid (),
   violation_id uuid null,
   vehicle_number text null,
@@ -223,7 +263,7 @@ create index IF not exists idx_e_challans_owner_id on public.e_challans using bt
 create index IF not exists idx_e_challans_vehicle_number on public.e_challans using btree (vehicle_number) TABLESPACE pg_default;
 create index IF not exists idx_e_challans_status on public.e_challans using btree (status) TABLESPACE pg_default;
 
-create table public.payments (
+create table if not exists public.payments (
   id uuid not null default gen_random_uuid (),
   challan_id uuid null,
   amount numeric(10, 2) not null,
@@ -238,7 +278,7 @@ create table public.payments (
 
 create index IF not exists idx_payments_challan_id on public.payments using btree (challan_id) TABLESPACE pg_default;
 
-create table public.vehicles (
+create table if not exists public.vehicles (
   id uuid not null default gen_random_uuid (),
   plate_number text not null,
   type text null,
